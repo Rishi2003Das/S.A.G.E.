@@ -19,6 +19,9 @@ AI-Driven Energy Supply Chain Resilience
 
 </div>
 
+> [!NOTE]
+> **Trying the live demo?** Google sign-in is **not enabled** on the hosted instance — it runs on a single **EC2 free-tier server** without a public OAuth callback domain, so the login step is a no-op. On the landing page, just click **"Launch Command Center"** to go **straight into the dashboard** (the command palette / operational view). No login required.
+
 ---
 
 ## What SAGE Does
