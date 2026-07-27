@@ -94,13 +94,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         log.error("Knowledge base init failed: %s", exc)
         # Don't crash the gateway — health endpoint should still return degraded status
 
-    # 2. Synthesise India brief on startup (force=True — ensures india.md always exists)
-    try:
-        from knowledge.context.india_brief import refresh_india_brief
-        asyncio.create_task(refresh_india_brief(force=True), name="india_brief_init")
-        log.info("India brief initial synthesis scheduled.")
-    except Exception as exc:
-        log.warning("India brief init failed to schedule: %s", exc)
+    # 2. Synthesise India brief on startup (force=True — ensures india.md always exists).
+    # Gated by SAGE_STARTUP_BRIEF (default on): set to 0 to skip the startup LLM/embed
+    # call — essential when Bedrock is quota-limited, since a throttled startup synthesis
+    # otherwise blocks the gateway (this is what took the Japan tenant offline).
+    if os.environ.get("SAGE_STARTUP_BRIEF", "1") == "1":
+        try:
+            from knowledge.context.india_brief import refresh_india_brief
+            asyncio.create_task(refresh_india_brief(force=True), name="india_brief_init")
+            log.info("India brief initial synthesis scheduled.")
+        except Exception as exc:
+            log.warning("India brief init failed to schedule: %s", exc)
+    else:
+        log.info("SAGE_STARTUP_BRIEF=0 — skipping startup India-brief synthesis (Bedrock-limited mode).")
 
     yield   # Application is running
 

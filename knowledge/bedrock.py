@@ -56,7 +56,7 @@ _TITAN_EMBED = "amazon.titan-embed-text-v2:0"
 _EMBED_DIM   = 1024
 
 _DAILY_QUOTA_PHRASE = "too many tokens per day"
-_RATE_LIMIT_RETRIES = 5
+_RATE_LIMIT_RETRIES = 2   # fail fast under throttling (was 5 -> ~31s hang; now ~7s)
 
 _TOOL_NAME = "record_result"
 
