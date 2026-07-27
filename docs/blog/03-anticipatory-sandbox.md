@@ -1,0 +1,41 @@
+# Episode 3: Answering a crisis in 50ms by computing a future that hasn't happened
+
+*How SAGE forks a speculative scenario when risk is merely rising, so the full model is already done the moment a threshold is crossed.*
+
+When a crude corridor like the Strait of Hormuz is about to close, the useful question is not "what happened" but "what happens next, day by day, to India's refinery feedstocks and strategic reserves." Answering that means running a full disruption cascade, then a procurement solver, then a reserve optimiser. End to end that is several seconds. Several seconds is a long time when a threshold has just been crossed and everyone is watching the screen. This post is about how we made that answer appear almost instantly.
+
+This is Episode 3 of 5 in the Engineering SAGE series. The full system overview is in the master post.
+
+## The latency you cannot avoid by optimising
+
+The disruption model is an Adaptive Regional Input-Output (ARIO) cascade over India's supply chain graph. A full cold run is around 2,500ms, and it is only the first stage: procurement routing and SPR optimisation run after it. Optimising the code helps at the margins, but the real problem is structural. You are doing all the work after the crossing is confirmed, while the user waits.
+
+## Compute the future before it arrives
+
+The insight is that a risk score does not jump from calm to crisis. It climbs. SAGE's score is a calibrated probability that the current situation is within 24 hours of a real disruption, and it moves through named bands as evidence accumulates: `calm → watch → elevated → action → critical`. By the time it crosses the **action** threshold — the model's Youden-J optimal point, currently **0.2634** — it has usually spent time in the **elevated** band first, rising. That rising window is free compute time.
+
+So when a score enters the elevated band, SAGE forks a sandbox: a speculative branch that assumes the crossing will happen and runs the whole cascade ahead of time. The sandbox uses a GNN surrogate (a PyTorch GraphSAGE model trained to approximate the ARIO output) that returns in 150ms or less, and it pre-stages the result as a `PendingScenario`.
+
+When the score actually crosses the action threshold, one of two things happens. If a sandbox already ran, SAGE promotes the pre-staged scenario: reload it, refresh the parameters against live numbers, done in about 50ms. If nothing was staged, it falls back to the cold ARIO run at around 2,500ms. In the common case where risk climbed gradually, promotion wins, and the end-to-end path from crossing to ranked output drops from roughly 8,500ms to about 300ms. That is the 28× speedup.
+
+This is speculative execution, the same bet a CPU makes with branch prediction. You do the work early on the assumption a branch will be taken. If the risk recedes back below the band instead, you throw the sandbox away and you have lost nothing but some background compute.
+
+## The rule that keeps speculation safe
+
+Speculative execution is dangerous in exactly one way: the speculative result must never be mistaken for reality. In SAGE that danger is concrete. A `PendingScenario` carries a projected risk score for a future that has not happened. If that projected score were written onto the live entity node, the monitor would read it, believe the crisis had arrived, and fire on a future that may never occur.
+
+So we made it an invariant: a projected risk score is never written as a `RISK_STATE` edge on a live node. Speculative output lives only on `PendingScenario` nodes and their linked output episodes, tagged `speculative`. The live graph keeps telling the truth about the present. Promotion is the only step that turns a speculative scenario into a confirmed one, and it happens only after the real crossing.
+
+The second rule is about isolation in time, not just data. The sandbox runs parallel to the main synthesis path, never awaited inside it. If the speculative branch is slow or fails, the live pipeline that updates risk scores and wiki pages is completely unaffected. The anticipatory feature can never slow down the thing it is trying to accelerate.
+
+## Why a surrogate instead of just running ARIO early
+
+We could have run the full ARIO model in the sandbox instead of a GNN surrogate. We chose the surrogate because the sandbox may fire often during a volatile period, once per rising signal, and a 2,500ms model run each time is wasteful when the score might settle back down. The surrogate at 150ms makes speculation cheap enough to do liberally. The full-fidelity ARIO still runs, but on the confirmed path, where accuracy matters more than speed and the refresh step reconciles the surrogate's estimate against the real numbers.
+
+## Takeaway
+
+The speedup did not come from a faster model. It came from moving the work earlier, to the window when risk is merely rising through the elevated band, and treating the result as a speculative bet that is cheap to make and safe to discard. The one non-negotiable was keeping that speculation quarantined from the live graph, so a pre-computed future could never be confused for the present.
+
+The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves-afk/Sage).
+
+*Engineering SAGE · Episode 3 of 5 — Previous: Episode 2. Next: Episode 4, from_pretrained, not fit.*

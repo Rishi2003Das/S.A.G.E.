@@ -42,11 +42,12 @@ A written walkthrough of the design decisions behind SAGE, each an introspective
 
 | # | Article | What it covers |
 |---|---------|----------------|
-| ▶ | **[Engineering SAGE — overview](https://ridingbluewaves.hashnode.dev/engineering-sage-an-anticipatory-intelligence-system-for-indias-crude-oil-supply-chain)** | The problem, the five-system architecture, and the four core bets. Start here. |
+| ▶ | **[Engineering SAGE — overview](https://ridingbluewaves.hashnode.dev/engineering-sage-an-anticipatory-intelligence-system-for-indias-crude-oil-supply-chain)** | The problem, the five-system architecture, and the five core design decisions. Start here. |
 | 1 | **[Why raw signals never touch SAGE's vector store](https://ridingbluewaves.hashnode.dev/why-raw-signals-never-touch-sages-vector-store)** | Synthesis-first ingest and why a deterministic source-aware triage gate, not an LLM, routes every signal. |
 | 2 | **[Why SAGE keeps two knowledge graphs, not one](https://ridingbluewaves.hashnode.dev/why-sage-keeps-two-knowledge-graphs-not-one)** | A computable Graphiti graph for machines, an editable wikilink graph for humans, and why every edge is bitemporal. |
 | 3 | **[Answering a crisis in 50ms by computing a future that hasn't happened](https://ridingbluewaves.hashnode.dev/answering-a-crisis-in-50ms-by-computing-a-future-that-hasnt-happened)** | The anticipatory sandbox: speculative execution, the GNN surrogate, and the RISK_STATE isolation rule behind the 28× speedup. |
 | 4 | **[from_pretrained, not fit: loading a worldview instead of simulating one](https://ridingbluewaves.hashnode.dev/frompretrained-not-fit-loading-a-worldview-instead-of-simulating-one)** | The versioned, provenance-tracked context bundle and the no-unsourced-row guarantee. |
+| 5 | **[The graph that learns its own weights](https://ridingbluewaves.hashnode.dev/the-graph-that-learns-its-own-weights)** | The risk cascade over exposure-weighted dependency edges, and how those weights are refined bitemporally from live signals — the "second brain that grows". |
 
 ---
 
@@ -333,10 +334,10 @@ is within 24 hours of a documented threshold-crossing disruption event.
 |---|---|
 | 2019 Gulf of Oman tanker attacks | 0.7500 |
 | 2021 Suez Ever Given blockage | 0.6667 |
-| 2022 Ukraine war energy shock | 0.9394 |
+| 2022 Ukraine war energy shock | 0.9545 |
 | 2025 US-Iran Hormuz standoff | 1.0000 |
 | 2026 Hormuz closure (golden path) | 0.8333 |
-| **Mean LOCO AUC** | **0.8379** |
+| **Mean LOCO AUC** | **0.8409** |
 
 Each row: train on the other four crises, test on the held-out one — these are
 genuine out-of-sample numbers, not training-set fit.
@@ -379,7 +380,7 @@ python3.10 scripts/build_calibration_data.py
 
 #### Action threshold
 
-The Youden-J optimal threshold is **0.2636** (probability ≥ this → `ACTION` band
+The Youden-J optimal threshold is **0.2634** (probability ≥ this → `ACTION` band
 trigger). Sensitivity 1.00, specificity 1.00 on the full training set; LOCO mean
 AUC 0.84 is the honest out-of-sample claim.
 
