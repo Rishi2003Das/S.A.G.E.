@@ -50,3 +50,42 @@ Isolated per-node scores describe symptoms; a cascade over real, exposure-weight
 The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves-afk/Sage).
 
 *Engineering SAGE · Episode 5 of 5 — Previous: Episode 4. Back to the series overview.*
+
+---
+
+## 🎓 CS Fundamentals — study companion
+
+*This finale is a **DSA** episode at heart — graph traversal, weighted propagation, BFS — fused with **DBMS** (bitemporal updates) and **ML** (online learning). Graph algorithms are interview staples; here's one in a real system.*
+
+### Data Structures & Algorithms
+
+- **Graph traversal — BFS.** The risk cascade is a **breadth-first search** from a high-risk node along dependency edges, raising each dependent's risk. BFS explores level by level (hop by hop) using a queue — which is exactly why the cascade is naturally hop-bounded. (DFS would dive deep first; BFS matches "propagate outward by degrees of separation.")
+- **Weighted graphs & propagation.** Each hop multiplies risk by the edge's real `throughput_share_pct` — a **weighted** propagation, not a flat decay. A dependent 45%-exposed inherits more than one 42%-exposed. This is shortest-path/flow intuition: edge weights encode real influence.
+- **Bounded traversal & convergence.** Propagation stops after a max hop count or when inherited risk falls below a floor, and uses **max-semantics** (only ever *raise* a dependent's score). Bounding + monotonic updates guarantee termination and prevent runaway feedback — the graph-algorithm version of "make it converge."
+- **Cycle safety.** A dependency graph can have cycles; a naive propagation could loop forever. Visited-tracking + the decay floor + max-semantics keep it finite (same care as `visited` sets in graph traversal).
+
+### DBMS + ML — a graph that learns
+
+- **Online / incremental learning.** Edge weights start as sourced seed values, then get *refined from live signals* — a live signal that implies a dependency changed updates the weight. This is **online learning**: the model improves as data arrives, versus batch training on a fixed set.
+- **Bitemporal weight updates (callback to Ep 2).** A learned weight is written bitemporally — old value kept with its supersede time, new value tagged `tier="learned"` with the *source signal* as provenance. So the graph's *structure* evolves with full history, not just its risk scores.
+- **Reconcile, never invent.** The LLM only extracts a new weight when a signal genuinely describes a change; absent evidence, the seed stands. This is the guardrail that separates "a knowledge base that learns" from "a model that drifts."
+
+**Interview Q&A.**
+1. *BFS vs DFS — when do you use each?* → BFS for shortest-hops / level-order / "spread outward"; DFS for deep exploration, topological sort, cycle detection. Cascade = BFS.
+2. *How do you propagate a value through a weighted graph without infinite loops?* → Visited set, per-hop decay, a stopping threshold, bounded hops, monotonic (max) updates → guaranteed termination.
+3. *Batch vs online learning?* → Train once on a fixed dataset vs update incrementally as data streams; online adapts to drift but must guard against learning from noise.
+4. *How do you evolve a graph's structure safely over time?* → Bitemporal edges (keep old, add new with provenance), reconcile only on real evidence, audit every change.
+
+### System Design
+- **Self-improving systems.** The cascade reads weights that get more accurate as evidence accumulates — a feedback loop where the system's model of the world sharpens with use. The design discipline is bounding that loop (only-raise, decay, evidence-gated) so "learns" never becomes "drifts."
+
+### ⚖️ This vs That — the architecture decisions, and the roads not taken
+
+| Decision | Alternatives | Why this choice |
+|---|---|---|
+| **Risk cascade (propagate to dependents)** | Isolated per-node scores | A crisis at a chokepoint should light up everything downstream; isolated scores show calm dependents during the exact moment they're most at risk — a comforting lie. |
+| **Exposure-weighted propagation** | Flat per-hop decay | Flat decay treats a 45%-dependent and a 42%-dependent port the same. Real `throughput_share` weights encode actual influence. |
+| **Bounded BFS, max-semantics** | Unbounded / additive propagation | Unbounded or additive propagation can loop or manufacture panic three hops away. Bounding + only-raise keeps it finite and honest. |
+| **Learned weights (bitemporal, evidence-gated)** | Static config weights; freely LLM-adjusted weights | Static weights go stale as routes change; freely adjusted weights drift. Evidence-gated bitemporal updates evolve the graph *and* keep the full audit trail. |
+
+**The one to defend:** *cascade + learned weights vs isolated static scores.* The naive model scores each entity alone. The systems-thinking answer: **risk is a network property — propagate it along real, weighted dependencies, and let those weights learn from evidence (bounded and bitemporal) so the model sharpens over time without drifting.** That's the difference between a database that stores scores and a knowledge base that reasons about a system.

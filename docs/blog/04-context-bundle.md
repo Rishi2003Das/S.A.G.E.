@@ -45,3 +45,40 @@ Treating foundational knowledge as a loadable, sourced, versioned bundle solved 
 The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves-afk/Sage).
 
 *Engineering SAGE · Episode 4 of 5 — Previous: Episode 3. Next: Episode 5, The graph that learns its own weights.*
+
+---
+
+## 🎓 CS Fundamentals — study companion
+
+*This episode is about **data provenance, schema validation, versioning, and reproducibility** — core **DBMS / data-engineering** topics — plus **Software Engineering** principles (config-as-data, no magic constants).*
+
+### DBMS / Data Engineering
+
+- **Provenance & lineage.** Every fact row carries a `tier` (real/derived/estimated) and a `source`; the loader **rejects any unsourced row** as a hard error. Data provenance = tracking where each value came from and how it was derived. It's what makes a system auditable and is increasingly a compliance requirement (you can trace every number to its origin).
+- **Schema validation at the boundary.** Rejecting malformed/unsourced rows at load time is **fail-fast validation** — catch bad data at ingestion, not three stages downstream where the error is unattributable. (Same principle as constraints/CHECKs in SQL and schema validation in pipelines.)
+- **Versioned artifacts & reproducibility.** The `.context` bundle is a versioned, diffable directory; `bundle_version` in a manifest gates upgrades. Point at `2026` vs `2027` and you load a different worldview. This is **immutable, versioned data artifacts** — the data equivalent of a pinned dependency / container image — and it makes runs reproducible.
+- **Idempotent, non-destructive migrations.** The upgrade *upserts* structural facts while *preserving* dynamic state (risk scores, episodes, learned edges), appends a "context update" note, and writes an audit episode. That's a safe **schema/data migration**: forward-only, auditable, preserving live data.
+- **Seed data vs live data.** Foundational knowledge is loaded (`from_pretrained`), then live signals layer on top — a clean separation of **seed/reference data** from **transactional data**, each managed differently.
+
+### Software Engineering / System Design
+
+- **Configuration as data, not code.** No numeric constant that affects behaviour lives in agent code — ARIO elasticities, TOPSIS weights, SPR limits all live in sourced CSVs. A magic constant buried in code is an undocumented, unsourced, hard-to-change assumption. Externalising config makes tuning *edit-data-and-version*, not *patch-and-redeploy*.
+- **Dependency injection of knowledge.** Loading a worldview instead of hardcoding it is DI applied to knowledge: swap the bundle, get a new domain, with zero code change.
+
+**Interview Q&A.**
+1. *What is data provenance/lineage and why does it matter?* → Tracking origin and transformation of each value; enables audit, debugging, compliance, trust.
+2. *Why validate/reject bad data at ingestion (fail-fast)?* → Errors are cheapest to attribute at the boundary; downstream, a bad value is untraceable and corrupts everything.
+3. *How do you make a data-driven system reproducible?* → Immutable versioned data artifacts + pinned config + recorded provenance; a run is defined by (code version, data version).
+4. *Why move constants out of code into config?* → Visibility, sourcing, and change without redeploy; a hardcoded elasticity is an untested claim about the world.
+5. *How do you migrate a schema without losing live data?* → Forward-only upserts, preserve dynamic rows, append an audit record, keep it idempotent.
+
+### ⚖️ This vs That — the architecture decisions, and the roads not taken
+
+| Decision | Alternatives | Why this choice |
+|---|---|---|
+| **Load a versioned worldview (`from_pretrained`)** | Hardcode entities/relationships; or "learn" them at runtime | Hardcoding buries assumptions in code; learning from scratch invents facts. A sourced, versioned bundle is auditable, swappable, and honest about where knowledge came from. |
+| **Reject unsourced rows (hard fail)** | Warn and continue on missing provenance | A warning gets ignored; a plausible unsourced number is the *worst* failure because it's invisible. Fail-fast makes "no simulated data" machine-checked. |
+| **Three load paths (facts direct / sources ground / narratives synthesise)** | Push everything through one pipeline | A known number needs no LLM; fetched text should *ground* prose (anti-hallucination); narratives need the synthesis path. Matching the load path to the data type is what keeps it honest. |
+| **Config in sourced CSVs** | Constants in agent code | Externalised, sourced params make every assumption visible and tunable without a redeploy. |
+
+**The one to defend:** *load vs train, and sourced-or-reject.* For a system that must not fabricate, the discipline is **treat foundational knowledge as a versioned, provenance-checked artifact you load** — not weights you train or constants you bury. Every value names its origin, or it doesn't get in. That's the whole trust model in one rule.

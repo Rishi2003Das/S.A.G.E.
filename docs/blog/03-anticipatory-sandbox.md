@@ -39,3 +39,38 @@ The speedup did not come from a faster model. It came from moving the work earli
 The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves-afk/Sage).
 
 *Engineering SAGE · Episode 3 of 5 — Previous: Episode 2. Next: Episode 4, from_pretrained, not fit.*
+
+---
+
+## 🎓 CS Fundamentals — study companion
+
+*This episode is a beautiful cross-over: a **Computer Architecture** idea (speculative execution) applied at the **System Design** level, with **OS** (isolation, async) and **ML** (surrogate/distilled models) alongside.*
+
+### Computer Architecture → System Design: speculative execution
+
+- **Branch prediction & speculative execution.** A CPU doesn't wait to know which way a branch goes — it *predicts*, executes speculatively down that path, and commits the result if the prediction was right (or discards it if wrong). SAGE does exactly this at the system level: when risk is *rising* (the "branch" likely to be taken), it speculatively runs the full crisis pipeline and stages the result. If the threshold is crossed, it *promotes* the staged result (~50ms); if risk recedes, it discards the work. **You lost only cheap background compute — same bet a CPU makes billions of times a second.**
+- **The commit/rollback discipline.** The non-negotiable rule: a speculative result must never be mistaken for reality. SAGE writes speculative output only to `PendingScenario` nodes tagged "speculative," never onto the live graph — exactly like a CPU not retiring speculative instructions until the branch resolves. Getting this wrong is the system analogue of a Spectre-class bug: speculative state leaking into the real world.
+- **Caching / precomputation.** Speculative execution here is a form of **precompute + cache**: trade space and background cycles for latency at read time. Same family as materialised views, CDN prewarming, and prefetching.
+
+### Operating Systems
+- **Isolation & async execution.** The sandbox runs *parallel to* the live path and is never awaited inside it — so a slow/failed speculation can't stall the real-time pipeline. This is fault isolation + asynchronous decoupling: the optional feature can never degrade the mandatory one.
+
+### Machine Learning
+- **Surrogate / distilled models.** The sandbox uses a **GNN surrogate** (a GraphSAGE net trained to approximate the expensive ARIO simulation) that returns in ~150ms instead of ~2500ms. A surrogate (a.k.a. emulator / distilled model) learns the input→output mapping of a costly function so you can call it cheaply and often. The full-fidelity model still runs on the *confirmed* path where accuracy matters more than speed — a **fast-approximate / slow-exact** two-tier design.
+
+**Interview Q&A.**
+1. *Explain speculative execution and its risk.* → Execute a likely branch before it's confirmed; commit if right, discard if wrong; risk = leaking speculative state (correctness/security, e.g. Spectre).
+2. *How would you make a slow pipeline feel instant when a trigger is predictable?* → Precompute speculatively during the lead-up, stage the result, promote on trigger; isolate and discard on miss.
+3. *What is a surrogate/distilled model and when is it worth it?* → A cheap learned approximation of an expensive function; worth it when you call it often and can tolerate approximate answers (with an exact fallback).
+4. *How do you keep an optional expensive feature from slowing the core path?* → Run it async and never await it inline; isolate failures; the core path proceeds regardless.
+
+### ⚖️ This vs That — the architecture decisions, and the roads not taken
+
+| Decision | Alternatives | Why this choice |
+|---|---|---|
+| **Speculative precompute during "rising"** | Compute everything on-demand at the crossing | On-demand makes the user wait seconds at the worst moment. The rising window is free compute; use it. |
+| **GNN surrogate in the sandbox** | Run the full ARIO simulation speculatively | Full ARIO (~2500ms) is too expensive to fire on every rising signal that might fizzle. The 150ms surrogate makes speculation cheap enough to do liberally; exact ARIO runs on the confirmed path. |
+| **Speculative state quarantined on PendingScenario** | Write projected scores onto the live graph | Writing a projected future onto live nodes would make the monitor fire on a crisis that hasn't happened. Quarantine is the correctness invariant. |
+| **Sandbox async, never awaited** | Call the sandbox inline in the pipeline | Inline coupling lets a slow speculation stall the real-time path — the exact thing it's meant to accelerate. |
+
+**The one to defend:** *speculative + surrogate vs on-demand exact.* The elegant answer isn't "optimise the model." It's **move the work earlier in time and approximate it, then reconcile against the exact model once reality confirms** — trading a little wasted compute and approximation error for a 28× latency win, with a hard isolation rule so the guess never contaminates the truth.

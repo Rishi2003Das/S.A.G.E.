@@ -33,3 +33,34 @@ Looking back, the same instinct shows up in every one of these decisions. Push e
 None of these are exotic techniques on their own. The interesting part was deciding, for a system meant to anticipate real-world supply shocks, where to spend a model call, where to trust plain code, and where to simply refuse to guess.
 
 The full system is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves-afk/Sage). This is part of an ongoing build series.
+
+---
+
+## 🎓 CS Fundamentals — study companion
+
+*SAGE is a systems-design masterclass wearing a domain problem. This overview maps to **System Design**, **DBMS**, and **Software Architecture**; the episodes go deeper. Read this before interviews to talk fluently about designing an event-driven, data-intensive AI system.*
+
+### System Design
+
+- **Reactive vs anticipatory systems.** A *reactive* system responds after an event; an *anticipatory* one pre-computes likely futures so the response is already staged. SAGE's 28× speedup comes from doing expensive work *before* the trigger — the same idea as CPU speculative execution and cache prefetching, applied at the system level.
+- **The "single writer" principle.** System 1 is the *only* writer of raw signals; Systems 2–5 are pure readers through a typed API. One writer, many readers is a classic way to eliminate whole classes of concurrency and consistency bugs — the write path is the only place invariants must hold.
+- **Pipeline / staged architecture.** SENSE → TRIAGE → SYNTHESIZE → (SANDBOX) → SCENARIO → PROCURE → RESERVE is a staged dataflow, each stage independently reasoned about and scaled. This is the backbone pattern of data-intensive systems.
+- **Layered separation of concerns.** Five "systems," each with a single responsibility, coupled only through explicit contracts. This is the monolith-vs-modular tradeoff resolved toward modular-with-strict-interfaces.
+
+**Interview Q&A.**
+1. *What's the difference between reactive and anticipatory/speculative architectures?* → Respond-after vs precompute-likely-futures; the latter trades wasted work for latency, like branch prediction.
+2. *Why designate a single writer for shared state?* → Concentrates invariant-enforcement in one place, avoids write-write conflicts, simplifies consistency.
+3. *How do you keep a multi-stage system from becoming a coupled mess?* → Explicit typed contracts between stages, one responsibility per stage, readers never reach into the writer's internals.
+
+### DBMS / Data systems (preview)
+- SAGE stores knowledge in **three stores** (episodic log, semantic graph, human wiki) — a polyglot-persistence design where each store fits a different access pattern. Episodes 2 and 4 go deep on graph + vector + bitemporal modelling and provenance.
+
+### ⚖️ This vs That — the architecture decisions, and the roads not taken
+
+| Decision | Alternatives | Why this choice |
+|---|---|---|
+| **Anticipatory (speculative) pipeline** | Purely reactive: run the models when the crisis fires | Reactive means the user waits several seconds *after* the threshold crosses. Precomputing during the "rising" window makes the answer appear in ~300ms. You spend cheap background compute to buy latency when it matters. |
+| **Five separated systems** | One monolithic agent/service | A monolith is simpler to start but couples ingestion, reasoning, and serving; a change in one risks all. Strict-contract modules let the four sub-systems be built and reasoned about independently. |
+| **Single writer + typed read API** | Every agent reads/writes the graph directly | Shared write access to a knowledge graph is a consistency nightmare. One writer (System 1) + read-only consumers keeps the truth in one place. |
+
+**The one to defend:** *anticipatory vs reactive.* Most systems are reactive because it's simpler. The senior insight: **latency at the moment of crisis is the product**, and you can pay for it in advance with speculative execution — as long as you quarantine the speculative result until reality confirms it (Episode 3). That single tradeoff is SAGE's headline.

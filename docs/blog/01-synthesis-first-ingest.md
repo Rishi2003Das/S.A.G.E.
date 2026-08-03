@@ -55,3 +55,43 @@ The discipline that made the rest of SAGE work was refusing to let raw signals i
 The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves-afk/Sage).
 
 *Engineering SAGE · Episode 1 of 5 — Next: Episode 2, Why SAGE keeps two knowledge graphs.*
+
+---
+
+## 🎓 CS Fundamentals — study companion
+
+*This post is rich in **DBMS** (vector stores, dedup), **Machine Learning / Statistics** (calibration, GBM, out-of-sample validation), and **System Design** (deterministic routing vs an LLM). Great prep for data-eng and ML-systems interviews.*
+
+### DBMS / Information Retrieval
+
+- **Vector stores & embeddings.** An embedding maps text to a point in high-dimensional space where *semantic similarity ≈ geometric closeness* (cosine similarity). A vector store indexes these for approximate nearest-neighbour search (ANN, e.g. HNSW). SAGE's rule — *only synthesised, contradiction-resolved episodes get embedded* — is a **data-quality-at-write-time** decision: garbage in the index means garbage retrieval, so it curates before indexing.
+- **Deduplication & canonicalization.** Resolving "Hormuz" and "Strait of Hormuz" to one canonical entity *before* writing prevents duplicate nodes — the same problem as **entity resolution / record linkage** in databases. Do it with deterministic lookup tables (alias → id), not an LLM.
+- **Cosine similarity.** `cos(θ) = (A·B)/(‖A‖‖B‖)` — the workhorse similarity metric for embeddings; SAGE routes news on a cosine threshold against the current assessment.
+
+### Machine Learning & Statistics
+
+- **The fusion model: GBM + Platt scaling.** A **Gradient-Boosted** classifier (ensemble of shallow trees, each correcting the last's residuals) predicts "within 24h of a disruption." **Platt scaling** calibrates raw scores into real probabilities (fits a logistic on the outputs) so a "0.7" means roughly 70%.
+- **Honest evaluation — LOCO / out-of-sample.** *Leave-One-Crisis-Out*: train on 4 crises, test on the 5th unseen one; the reported **AUC 0.84** is genuine generalisation, not training-set fit. **AUC-ROC** = probability the model ranks a random positive above a random negative (0.5 = coin flip, 1.0 = perfect).
+- **Youden's J threshold.** The operating point that maximises `sensitivity + specificity − 1` — how SAGE picks its action threshold (0.2634) rather than a hand-waved 0.5.
+- **Feature importance as a sanity check.** GDELT tone + AIS gaps dominating (and price war-premium ≈ 0) matches domain intuition — a model whose importances disagreed with reality would be one to distrust.
+
+**Interview Q&A.**
+1. *What is an embedding and how do you search a vector store?* → Map to a semantic vector space; ANN search (HNSW) by cosine/dot similarity.
+2. *Precision/recall, ROC, AUC — define them.* → TP/(TP+FP), TP/(TP+FN); ROC plots TPR vs FPR across thresholds; AUC = ranking quality.
+3. *Why validate leave-one-crisis-out instead of a random split?* → Random splits leak correlated samples from the same event; LOCO tests true generalisation to an unseen regime.
+4. *What is model calibration and why does it matter?* → Making predicted probabilities match observed frequencies (Platt/isotonic); essential when a downstream system acts on the probability.
+5. *How do you choose a classification threshold?* → By the operating goal — Youden's J, or the cost-weighted point on the ROC/PR curve, not a default 0.5.
+
+### System Design
+- **Deterministic routing vs an LLM classifier.** SAGE routes signals with plain code because it's *cheaper* (no model call on events that will be dropped), *deterministic* (same input → same route), and *unnecessary* (the source already tells you). Push each decision to the cheapest layer that can make it correctly — a recurring senior-design principle.
+
+### ⚖️ This vs That — the architecture decisions, and the roads not taken
+
+| Decision | Alternatives | Why this choice |
+|---|---|---|
+| **Synthesis-first (reconcile, then embed)** | Embed raw signals directly, sort it out at retrieval | Embedding raw feeds captures noise, never resolves contradictions, and degrades exactly during a crisis when volume spikes. Storing *judgement* not *noise* keeps retrieval sharp. |
+| **Deterministic triage gate** | An LLM classifier deciding synthesize/extract/drop | An LLM costs a call on every event (including the 1000s to drop), is non-deterministic, and answers a question the *source* already answers. Code is cheaper, reproducible, and sufficient. |
+| **Calibrated GBM for the score** | Hand-tuned weighted-sum of features | A weighted sum is a guess; a GBM + Platt is validated out-of-sample (LOCO AUC 0.84) and calibrated — you can *defend* the number, and it degrades to the weighted-sum only as a labelled fallback. |
+| **Resolve identity before the LLM** | Let the LLM extract entities | Pre-resolving to a canonical registry prevents duplicate graph nodes and anchors synthesis to existing entities. |
+
+**The one to defend:** *deterministic code vs an LLM for routing.* The trendy answer is "use an LLM for everything." The mature answer: **an LLM is the most expensive, least predictable tool — use it only where the source genuinely can't answer.** Routing by source type is a solved problem in code; spending a model call (and non-determinism) on it is a cost and reliability regression.
