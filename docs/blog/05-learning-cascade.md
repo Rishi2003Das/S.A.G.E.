@@ -53,6 +53,20 @@ The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves
 
 ---
 
+## 🧰 The learning stack, from zero — and what we chose it over
+
+- **A graph neural network — over hand-tuned edge weights.** A GNN learns node/edge representations by **message-passing**: each node aggregates its neighbours' features over several rounds. That lets the graph's edge weights (how strongly risk propagates along a supply route) be *learned from outcomes* rather than hand-set. Built with **torch-geometric**.
+- **Over static heuristics.** Hand-tuned weights are a snapshot of one analyst's intuition; learned weights adapt as the world changes. The cost is labelled outcomes and a training loop — a real trade, made deliberately.
+- **scikit-learn for the lighter models, PyTorch for the GNN** — right-sized tools rather than one hammer.
+
+## 🚢 From demo to production
+
+- **Train/serve split** with model versioning and rollback.
+- **Drift monitoring** — a learned model silently degrades as the distribution shifts; you measure for it.
+- **The feedback loop** that feeds realised outcomes back into the weights is the MLOps spine that turns a one-shot model into a system that keeps learning.
+
+---
+
 ## 🎓 CS Fundamentals — study companion
 
 *This finale is a **DSA** episode at heart — graph traversal, weighted propagation, BFS — fused with **DBMS** (bitemporal updates) and **ML** (online learning). Graph algorithms are interview staples; here's one in a real system.*

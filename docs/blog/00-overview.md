@@ -36,6 +36,27 @@ The full system is open at [github.com/BlueWaves-afk/Sage](https://github.com/Bl
 
 ---
 
+## 🧰 The stack, from zero — and what we chose it over
+
+SAGE is a Python system with a deliberately unusual data core. The whole toolbox, and the road not taken for each:
+
+- **Knowledge store — Graphiti + FalkorDB (a bitemporal knowledge graph) over a plain vector store or relational DB.** A vector store retrieves *similar text*; a supply-chain risk problem needs *entities and relationships over time* — which tanker, which strait, which sanction, when. **FalkorDB** is a fast Redis-module graph database (lighter to embed than **Neo4j**); **Graphiti** layers bitemporal versioning and entity resolution on top. Bitemporality lets us ask "what did we believe on date X," which a flat vector store can't.
+- **Orchestration — LangGraph (an autonomous, stateful loop) over a linear chain or a fully autonomous agent framework.** LangGraph gives an explicit state graph with conditional edges — clean signal goes straight through, a threshold crossing triggers modelling and re-planning — within a bounded, auditable path (the same reasoning as the VIGIASearch series).
+- **LLM — Amazon Bedrock (Nova Pro), managed, and triage-gated.** Managed inference over self-hosting; the triage gate (Episode 1) is what keeps the token bill bounded.
+- **Ingestion transport — Redis (asyncio) queue** decoupling the four always-on sensory sub-agents (AIS, news, sanctions, prices) from the synthesis core, so a news burst doesn't block price ingestion.
+- **ML — PyTorch + torch-geometric (GNNs) + scikit-learn** for the graph that learns its own weights (Episode 5).
+- **API — FastAPI**, served today from a single EC2 instance.
+
+## 🚢 From demo to production
+
+The live demo is honest about its limits: one **EC2 free-tier** box with Google OAuth disabled (no public callback domain). Production means naming the substrate:
+- **Managed, clustered graph DB** with snapshots and provenance retention, not a single-node Redis module.
+- **Autoscaling the sensory agents** and backpressure on the Redis queue with a dead-letter path for failed synthesis.
+- **LLM spend as a first-class SLO** — the triage gate is the cost control; a production LLM pipeline without a spend gate is a runaway bill.
+- **Auditability** — a system that recommends an SPR drawdown must trace every recommendation to dated evidence (the bitemporal graph is what makes that possible).
+
+---
+
 ## 🎓 CS Fundamentals — study companion
 
 *SAGE is a systems-design masterclass wearing a domain problem. This overview maps to **System Design**, **DBMS**, and **Software Architecture**; the episodes go deeper. Read this before interviews to talk fluently about designing an event-driven, data-intensive AI system.*

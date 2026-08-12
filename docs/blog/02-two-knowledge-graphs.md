@@ -46,6 +46,21 @@ The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves
 
 ---
 
+## 🧰 The graph stack, from zero — and what we chose it over
+
+- **Knowledge graph over relational tables.** Entities plus typed relationships, traversable — so "which suppliers route through which strait under which sanction" is a graph walk, not a pile of self-joins that explode combinatorially.
+- **Graphiti + FalkorDB over Neo4j or a vector store.** **FalkorDB** is a fast Redis-module graph engine (cheap to embed); **Graphiti** adds bitemporal versioning and LLM-friendly entity resolution. A vector store couldn't answer multi-hop structural questions at all.
+- **Bitemporality, from zero.** Two clocks: **valid time** (when a fact was true in the world) and **transaction time** (when *we learned* it). Keeping both lets us reconstruct "what did we believe on date X" — essential when auditing why a recommendation was made.
+- **Two graphs, one provenance link.** An append-only event graph (what happened) and a mutable belief graph (what we infer) have different consistency models; splitting them keeps history auditable while beliefs stay revisable.
+
+## 🚢 From demo to production
+
+- **Clustered/managed graph** with snapshotting and retention.
+- **Query-latency SLOs** on multi-hop reads (the hot path for the dashboard).
+- **Provenance as a hard requirement** — every belief edge points back to the dated event that produced it.
+
+---
+
 ## 🎓 CS Fundamentals — study companion
 
 *This is the **DBMS** episode — graph databases, temporal data modelling, and the append-only/never-delete principle — with **DSA** (graphs) alongside. Bitemporal modelling is a genuinely advanced topic that impresses interviewers.*

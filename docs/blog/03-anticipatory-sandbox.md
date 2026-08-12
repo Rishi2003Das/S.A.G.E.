@@ -42,6 +42,20 @@ The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves
 
 ---
 
+## 🧰 The anticipation stack, from zero — and what we chose it over
+
+- **Speculative execution — over on-demand modelling.** The crisis answer takes too long to compute *after* the question. So we compute likely futures *ahead* of the threshold crossing — the source of the **28× speedup** from threshold-crossing to ranked output. Same idea as a CPU speculatively executing past a branch: do the expensive work before you're certain you'll need it, and have the answer ready.
+- **Disruption modelling over the graph.** We simulate a disruption's propagation through the supplier/route graph and rank responses (reroute procurement, recommend an SPR drawdown).
+- **A LangGraph conditional loop** drives model → evaluate → re-plan, so the sandbox re-runs as new evidence lands.
+
+## 🚢 From demo to production
+
+- **Bound the speculation** — you can't simulate every future; a compute budget picks the most probable branches.
+- **Cache invalidation** — a materialised future goes stale when the world moves; it must expire.
+- **A compute/spend budget** so anticipation doesn't become an always-on cost sink.
+
+---
+
 ## 🎓 CS Fundamentals — study companion
 
 *This episode is a beautiful cross-over: a **Computer Architecture** idea (speculative execution) applied at the **System Design** level, with **OS** (isolation, async) and **ML** (surrogate/distilled models) alongside.*

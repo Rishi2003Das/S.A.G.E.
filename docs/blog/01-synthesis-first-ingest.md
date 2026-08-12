@@ -58,6 +58,22 @@ The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves
 
 ---
 
+## 🧰 The ingestion stack, from zero — and what we chose it over
+
+The defining rule is *synthesis-first*: raw signals never touch the knowledge store. From zero, why and how:
+
+- **A triage gate before the LLM — over "embed/ingest everything."** Naive ingestion pollutes retrieval with noise and burns tokens on signals that don't matter. A cheap classifier triages each incoming signal and only what's worth it is synthesised by **Nova Pro** into structured evidence. The gate is the difference between a bounded bill and a runaway one.
+- **LLM synthesis into structured evidence — over storing raw text.** We turn a messy news item into typed graph facts with provenance, so downstream retrieval is precise and auditable, not a similarity guess over raw prose.
+- **A Redis async queue** between the four sensory sub-agents and the synthesis consumer decouples producers from the consumer — a burst on one channel can't starve the others.
+
+## 🚢 From demo to production
+
+- **Idempotency + dedup** so the same signal ingested twice doesn't double-count.
+- **Backpressure + dead-letter** on the queue so a synthesis failure is retried, not lost.
+- **Cost observability** on the triage/synthesis split — the metric that keeps the LLM bill honest.
+
+---
+
 ## 🎓 CS Fundamentals — study companion
 
 *This post is rich in **DBMS** (vector stores, dedup), **Machine Learning / Statistics** (calibration, GBM, out-of-sample validation), and **System Design** (deterministic routing vs an LLM). Great prep for data-eng and ML-systems interviews.*

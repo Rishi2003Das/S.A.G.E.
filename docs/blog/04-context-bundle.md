@@ -48,6 +48,20 @@ The code is open at [github.com/BlueWaves-afk/Sage](https://github.com/BlueWaves
 
 ---
 
+## 🧰 The context stack, from zero — and what we chose it over
+
+- **Load a worldview, don't simulate one.** Instead of making the model reason from a blank slate, we assemble a rich **context bundle** from the graph — relevant entities, their relationships, recent dated evidence, and provenance — and hand *that* to the model. It's RAG's cousin, but graph-grounded rather than similarity-grounded.
+- **GNN embeddings (torch-geometric)** encode the graph's *structure* into the bundle, so the model sees not just facts but how they connect.
+- **Over fine-tuning / dumping raw docs.** Baking knowledge into weights is stale the day after training and unauditable; retrieval-and-assembly is current, cheaper, and every claim traces to a source.
+
+## 🚢 From demo to production
+
+- **Context-window budgeting** — pick the highest-value subgraph, don't overflow the prompt.
+- **Freshness** — the bundle must reflect the latest evidence, not a cached snapshot.
+- **Grounding/citation** so a recommendation is defensible against the exact evidence that produced it.
+
+---
+
 ## 🎓 CS Fundamentals — study companion
 
 *This episode is about **data provenance, schema validation, versioning, and reproducibility** — core **DBMS / data-engineering** topics — plus **Software Engineering** principles (config-as-data, no magic constants).*
