@@ -15,12 +15,12 @@ AI-Driven Energy Supply Chain Resilience
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 [![Read the Series](https://img.shields.io/badge/Read_the_Series-Engineering_SAGE-2563eb?style=for-the-badge&logo=hashnode&logoColor=white)](https://ridingbluewaves.hashnode.dev/engineering-sage-an-anticipatory-intelligence-system-for-indias-crude-oil-supply-chain)
-[![Live Demo](https://img.shields.io/badge/Live_Demo-44.213.136.64-22c55e?style=for-the-badge&logo=amazonaws&logoColor=white)](http://44.213.136.64/)
+[![Run Locally](https://img.shields.io/badge/Run_Locally-docker_compose_up-2563eb?style=for-the-badge&logo=docker&logoColor=white)](#getting-started)
 
 </div>
 
 > [!NOTE]
-> **Trying the live demo?** Google sign-in is **not enabled** on the hosted instance — it runs on a single **EC2 free-tier server** without a public OAuth callback domain, so the login step is a no-op. On the landing page, just click **"Launch Command Center"** to go **straight into the dashboard** (the command palette / operational view). No login required.
+> **Want to try SAGE?** The hosted demo has been retired. Spin it up yourself in a few minutes — see **[Getting Started](#getting-started)** (`docker compose up`), then open the dashboard and click **"Launch Command Center"** to go straight into the operational view.
 
 ---
 
