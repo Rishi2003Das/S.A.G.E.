@@ -193,7 +193,7 @@ on the architecture diagram or SAGE logo with the five systems highlighted.
 
 Run this checklist immediately before recording:
 
-1. Confirm `http://44.213.136.64/health` returns `status: ok` and `kb_ready: true`.
+1. Confirm `http://localhost/health` returns `status: ok` and `kb_ready: true`.
 2. Select **India** and hard-refresh `/command`.
 3. Verify the graph renders and the top bar says **LIVE**, not **OFFLINE**.
 4. Open **Learning** and confirm **Mean LOCO AUC 0.8409** renders.
